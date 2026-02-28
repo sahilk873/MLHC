@@ -1,0 +1,37 @@
+[
+  {
+    "type": "figure",
+    "src": "results/figures/bold_error.png",
+    "dest": "paper/figs/bold_error.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_error.png",
+    "dest": "paper/figs/encode_error.png"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/bold_preview.csv",
+    "dest": "paper/tables/bold_preview.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/skintone_distribution.csv",
+    "dest": "paper/tables/skintone_distribution.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/encode_preview.csv",
+    "dest": "paper/tables/encode_preview.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/model_metrics_bold.csv",
+    "dest": "paper/tables/model_metrics_bold.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/model_metrics_encode.csv",
+    "dest": "paper/tables/model_metrics_encode.csv"
+  }
+]

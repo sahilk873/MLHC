@@ -1,0 +1,2 @@
+hidden_hypoxemia_thresholds: [90, 92, 94]
+random_seed: 1337

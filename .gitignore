@@ -1,0 +1,49 @@
+# Data and derived artifacts
+physionet.org/
+artifacts/
+results/
+reports/
+
+# Large vocab/data dumps
+CONCEPT*.csv
+CONCEPT_*.csv
+DOMAIN.csv
+DRUG_STRENGTH.csv
+RELATIONSHIP.csv
+VOCABULARY.csv
+*.csv.gz
+*.parquet
+*.zip
+*.jar
+
+# Images and binaries
+*.png
+*.jpg
+*.jpeg
+*.tiff
+*.tif
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+.uv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+
+# Paper outputs
+paper/figs/
+paper/tables/
+
+# Allow small synthetic fixtures
+!tests/fixtures/**/*.csv
