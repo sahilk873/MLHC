@@ -1,0 +1,12 @@
+\begin{tabular}{llllllllllllllllllll}
+\toprule
+model & mae & mae\_ci\_low & mae\_ci\_high & rmse & rmse\_ci\_low & rmse\_ci\_high & mae\_gap & mae\_gap\_ci\_low & mae\_gap\_ci\_high & worst\_group\_mae & missed\_hypoxemia\_rate & missed\_hypoxemia\_rate\_ci\_low & missed\_hypoxemia\_rate\_ci\_high & fnr\_gap & fnr\_gap\_ci\_low & fnr\_gap\_ci\_high & hidden\_hypoxemia\_T92\_gap & hidden\_hypoxemia\_T92\_gap\_ci\_low & hidden\_hypoxemia\_T92\_gap\_ci\_high \\
+\midrule
+baseline & 2.456 & 2.397 & 2.524 & 4.003 & 3.866 & 4.159 & 0.995 & 0.695 & 1.406 & 3.000 & 0.034 & 0.031 & 0.038 & 0.316 & 0.150 & 1.000 & 0.033 & 0.024 & 0.051 \\
+isotonic & 2.123 & 2.075 & 2.173 & 3.364 & 3.248 & 3.492 & 1.224 & 0.619 & 1.666 & 2.327 & 0.047 & 0.042 & 0.051 & 0.000 & 0.000 & 0.000 & 0.033 & 0.024 & 0.051 \\
+ridge & 2.213 & 2.162 & 2.267 & 3.464 & 3.347 & 3.595 & 1.823 & 0.577 & 2.009 & 2.424 & 0.042 & 0.038 & 0.046 & 0.123 & 0.085 & 0.225 & 0.033 & 0.024 & 0.051 \\
+ridge_reweighted & 2.251 & 2.200 & 2.305 & 3.500 & 3.389 & 3.627 & 1.937 & 0.613 & 2.130 & 2.471 & 0.044 & 0.040 & 0.048 & 0.053 & 0.040 & 0.143 & 0.033 & 0.024 & 0.051 \\
+isotonic_safe & 4.218 & 4.171 & 4.267 & 4.855 & 4.790 & 4.926 & 1.935 & 0.426 & 3.871 & 4.333 & 0.021 & 0.018 & 0.024 & 0.625 & 0.200 & 1.000 & 0.033 & 0.024 & 0.051 \\
+ridge_safe & 5.434 & 5.384 & 5.486 & 6.001 & 5.934 & 6.070 & 1.470 & 0.401 & 2.940 & 5.769 & 0.021 & 0.018 & 0.024 & 0.625 & 0.200 & 1.000 & 0.033 & 0.024 & 0.051 \\
+\bottomrule
+\end{tabular}

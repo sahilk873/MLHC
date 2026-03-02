@@ -1,0 +1,339 @@
+%\documentclass[wcp,gray]{jmlr} % test grayscale version
+ %\documentclass[wcp]{jmlr}% former name JMLR W\&CP
+\documentclass[pmlr]{jmlr}% new name PMLR (Proceedings of Machine Learning)
+
+\RequirePackage{graphicx}
+ % The following packages will be automatically loaded:
+ % amsmath, amssymb, natbib, graphicx, url, algorithm2e
+ \usepackage{booktabs}
+ %\usepackage{rotating}% for sideways figures and tables
+\usepackage{longtable}% for long tables
+ % The booktabs package is used by this sample document
+ % (it provides \toprule, \midrule and \bottomrule).
+ % 
+ % book quality tables
+
+ % The siunitx package is used by this sample document
+ % to align numbers in a column by their decimal point.
+ % Remove the next line if you don't require it.
+\makeatletter
+\def\set@curr@file#1{\def\@curr@file{#1}} %temp workaround for 2019 latex release
+\makeatother
+\usepackage[load-configurations=version-1]{siunitx} % newer version
+
+ % The following command is just for this sample document:
+\newcommand{\cs}[1]{\texttt{\char`\\#1}}
+
+ % Define an unnumbered theorem just for this sample document:
+\theorembodyfont{\upshape}
+\theoremheaderfont{\scshape}
+\theorempostheader{:}
+\theoremsep{\newline}
+\newtheorem*{note}{Note}
+
+ % change the arguments, as appropriate, in the following:
+\jmlrvolume{[VOLUME \# TBD]}
+\jmlryear{2026}
+\jmlrworkshop{Machine Learning for Healthcare}
+
+% H: Not sure if we need this:
+% Short headings should be running head and authors last names
+% \ShortHeadings{A Really Awesome MLHC Article}{Lastname, PhD and Lastname, MD}
+% \firstpageno{1}
+
+\title[Pulse Oximetry Bias]{External Validation of Pulse Oximetry Debiasing with Measured Skin Tone}
+
+\author{\Name{Anonymous Author(s)}
+       \Email{anonymous@domain.edu}\\
+       \addr Anonymous Institution\\
+       Anonymous City, Country}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Pulse oximetry bias and hidden hypoxemia have been documented across race/ethnicity, but it is unclear whether race-stratified debiasing improves outcomes when validated against measured skin tone. We develop debiasing and calibration strategies on the multi-center BOLD dataset and externally validate on ENCoDE, which provides prospectively measured skin tone (Monk scale) across devices and locations. We evaluate continuous error and hidden hypoxemia, report bootstrap confidence intervals, and analyze worst-group disparities across race/ethnicity and skin tone bins. On BOLD, simple models improve overall MAE versus the baseline (SpO\textsubscript{2} as SaO\textsubscript{2} proxy) and reduce worst-group gaps. On ENCoDE, transfer evaluation shows that race-based gains do not always translate to improved performance across measured skin tone, highlighting the need for validation on measured pigmentation. Our pipeline is fully reproducible and generates all tables and figures from script.
+\end{abstract}
+
+\section{Introduction}
+
+Pulse oximetry is widely used to monitor oxygen saturation in clinical care. Multiple studies report that SpO\textsubscript{2} can overestimate SaO\textsubscript{2} among darker-skinned patients, leading to hidden hypoxemia and potential delays in care. As machine learning models and calibration strategies are proposed to correct these biases, it remains unclear whether improvements measured across race/ethnicity actually translate to improvements across measured skin tone\cite{pulseox-bias,hidden-hypoxemia,skin-tone-metrics}.
+
+In this work, we quantify bias in the BOLD dataset, train debiasing models on BOLD, and externally validate these models on ENCoDE, which includes prospectively measured skin tone (Monk scale) across devices and locations. We emphasize rigorous evaluation with bootstrap confidence intervals, worst-group metrics, and sensitivity analyses across hidden hypoxemia thresholds. Our main contribution is an external validation showing when race-stratified gains on retrospective ICU data generalize---or fail to generalize---to measured skin tone.
+
+\subsection*{Generalizable Insights about Machine Learning in the Context of Healthcare}
+\begin{itemize}
+\item Demographic proxies (race/ethnicity) can be insufficient for fairness claims; validation with measured clinical attributes (e.g., skin tone) can change conclusions.
+\item Debiasing methods may reduce overall error while worsening rare but clinically important errors (hidden hypoxemia), motivating explicit tradeoff analysis.
+\item External validation on prospectively measured data is essential for claims of fairness in clinical ML models.
+\end{itemize}
+
+\section{Related Work}
+
+Prior work documents pulse oximetry bias and hidden hypoxemia across racial groups\cite{pulseox-bias,hidden-hypoxemia}. Recent efforts explore calibration and debiasing strategies for physiological measurements and downstream risk models\cite{calibration-clinical,ml-fairness-health}. Our work differs by explicitly validating fairness conclusions against measured skin tone, using ENCoDE's prospectively collected Monk scale metrics, and by focusing on the generalization of debiasing methods across datasets and device contexts.
+
+\section{Methods}
+
+\textbf{Endpoints.} We compute continuous error $e = \text{SaO}_2 - \text{SpO}_2$, absolute error $|e|$, and hidden hypoxemia defined as $\text{SaO}_2 < 88$ with $\text{SpO}_2 \geq T$ for thresholds $T \in \{90,92,94\}$ (primary $T=92$). We also compute calibration curves for SaO\textsubscript{2} vs. SpO\textsubscript{2}.
+
+\textbf{Debiasing models.} We evaluate: (1) baseline $\hat{\text{SaO}}_2 = \text{SpO}_2$, (2) ridge regression using SpO\textsubscript{2} and available covariates, (3) reweighted ridge to reduce worst-group error, (4) isotonic regression calibration, and (5) safe offset models that prioritize reduction of hidden hypoxemia at the cost of MAE. For transfer evaluation, we train reduced-feature variants when ENCoDE lacks a covariate.\n
+\textbf{Evaluation.} We report MAE, RMSE, hidden hypoxemia FNR/FPR, and worst-group performance. Uncertainty is estimated via 1,000 bootstrap resamples. To assess robustness, we perform repeated train/test splits with patient-level separation and summarize variability across seeds.
+
+\section{Cohort}
+
+\subsection{Cohort Selection}
+BOLD is a multi-center ICU dataset with paired ABG and pulse oximetry measurements. ENCoDE is a prospective dataset with OMOP tables and measured skin tone (Monk scale) across multiple devices and anatomical locations. We apply strict pairing logic to identify ABG SaO\textsubscript{2} measurements and the nearest preceding SpO\textsubscript{2} within 5 minutes in the same visit.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_race_distribution.png}
+  \caption{BOLD race/ethnicity distribution.}
+  \label{fig:bold-race-dist}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_skintone_distribution.png}
+  \caption{ENCoDE Monk skin tone distribution.}
+  \label{fig:encode-skintone-dist}
+\end{figure}
+
+\subsection{Data Extraction}
+We auto-discover raw files, generate a manifest with hashes, and load tables with explicit schema validation. For ENCoDE, we parse temporary concept IDs to extract skin tone and image-derived features, and index available images by device and location.
+
+\subsection{Feature Choices}
+Features include SpO\textsubscript{2}, demographics (age, sex, race/ethnicity where available), and available covariates. Skin tone is computed from Monk scale values and binned into light/medium/dark groups. We standardize feature names across datasets to enable transfer evaluation.
+
+\section{Results on Real Data}
+
+\subsection{Evaluation Approach/Study Design}
+We train debiasing models on BOLD and evaluate on held-out BOLD test splits. We then perform external validation on ENCoDE using transferable feature sets. All metrics include bootstrap confidence intervals, and we report worst-group performance across race/ethnicity (BOLD, ENCoDE) and skin tone bins (ENCoDE).
+
+\subsection{Baseline Disparities}
+Figure~\ref{fig:bold-error-race} shows BOLD error distributions by race/ethnicity, and Figure~\ref{fig:encode-error-skintone} shows ENCoDE error by skin tone bin. Both datasets exhibit non-trivial disparities, motivating debiasing and careful evaluation across clinical thresholds.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_error_by_race.png}
+  \caption{BOLD error distribution by race/ethnicity.}
+  \label{fig:bold-error-race}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_error_by_skintone.png}
+  \caption{ENCoDE error distribution by Monk skin tone bin.}
+  \label{fig:encode-error-skintone}
+\end{figure}
+
+\n\subsection{Calibration}
+Figures~\ref{fig:bold-calibration} and~\ref{fig:encode-calibration} show reliability curves for SpO\textsubscript{2} vs. SaO\textsubscript{2}.\n\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_calibration.png}
+  \caption{BOLD calibration curve.}
+  \label{fig:bold-calibration}
+\end{figure}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_calibration.png}
+  \caption{ENCoDE calibration curve.}
+  \label{fig:encode-calibration}
+\end{figure}
+
+\subsection{BOLD Debiasing Performance}
+Table~\ref{tab:bold-models} summarizes model performance on BOLD. Reweighted ridge improves overall MAE and reduces worst-group gaps relative to the baseline. Figure~\ref{fig:bold-fnr-gap} shows bootstrapped FNR gap confidence intervals for hidden hypoxemia.
+
+\begin{table}[t]
+  \centering
+  \caption{BOLD model performance with bootstrap CIs (primary threshold $T=92$).}
+  \input{../paper/tables/table2_bold_models.tex}
+  \label{tab:bold-models}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_fnr_gap_ci.png}
+  \caption{BOLD hidden hypoxemia FNR gap with 95\% bootstrap CIs.}
+  \label{fig:bold-fnr-gap}
+\end{figure}
+
+\subsection{External Validation on ENCoDE}
+Table~\ref{tab:encode-models} shows external validation on ENCoDE. Transfer models improve overall MAE in ENCoDE compared with the baseline while maintaining or improving worst-bin skin tone performance. Figure~\ref{fig:encode-mae-gap} reports MAE gap CIs by skin tone.
+
+\begin{table}[t]
+  \centering
+  \caption{ENCoDE external validation results stratified by skin tone.}
+  \input{../paper/tables/table3_encode_models.tex}
+  \label{tab:encode-models}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_mae_gap_ci.png}
+  \caption{ENCoDE MAE gap by skin tone with 95\% bootstrap CIs.}
+  \label{fig:encode-mae-gap}
+\end{figure}
+
+\subsection{Hidden Hypoxemia Sensitivity}
+We sweep hidden hypoxemia thresholds ($T=90,92,94$) in both datasets. Figures~\ref{fig:bold-hh-sweep} and~\ref{fig:encode-hh-sweep} show consistent trends across thresholds, though event rates in ENCoDE are lower.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_hidden_hypoxemia_sweep.png}
+  \caption{BOLD hidden hypoxemia rate across thresholds.}
+  \label{fig:bold-hh-sweep}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_hidden_hypoxemia_sweep.png}
+  \caption{ENCoDE hidden hypoxemia rate across thresholds.}
+  \label{fig:encode-hh-sweep}
+\end{figure}
+
+\section{Required: Discussion}
+
+We find that debiasing on retrospective ICU data reduces overall error and can reduce worst-group disparities; however, external validation on ENCoDE reveals that race-based gains do not uniformly translate to measured skin tone improvements. This supports the need for measured pigmentation in fairness evaluation, and suggests that race-ethnicity proxies may be insufficient for clinical deployment claims. The tradeoff between overall MAE and hidden hypoxemia highlights the importance of explicitly prioritizing clinically important errors.
+
+\paragraph{Limitations}
+ENCoDE has relatively low event rates for hidden hypoxemia, limiting power for some subgroup estimates. Transfer models are constrained by feature overlap between datasets. Our isotonic calibration variants occasionally exhibited pathological increases in hidden hypoxemia and were excluded from the main analysis. Finally, we do not analyze downstream clinical outcomes; our focus is measurement bias rather than clinical decision impact.
+
+% ACKNOWLEDGEMENTS ONLY GO IN THE CAMERA-READY, NOT THE SUBMISSION
+% \acks{Many thanks to all collaborators and funders!}
+
+%Do NOT change font size of references or modify the bibliography style
+\bibliography{../paper/refs}
+
+\newpage
+\appendix
+\section{Additional Analyses}
+\subsection{Full Results Tables}
+\begin{table}[t]
+  \centering
+  \caption{Group counts used in fairness metrics.}
+  \input{../paper/tables/group_counts.tex}
+  \label{tab:group-counts}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Tradeoff summary on BOLD.}
+  \input{../paper/tables/tradeoff_summary_bold.tex}
+  \label{tab:tradeoff-bold}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Tradeoff summary on ENCoDE.}
+  \input{../paper/tables/tradeoff_summary_encode.tex}
+  \label{tab:tradeoff-encode}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Repeated split summary on BOLD.}
+  \input{../paper/tables/repeated_splits_summary_bold.tex}
+  \label{tab:repeated-splits}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Full model metrics on BOLD.}
+  \input{../paper/tables/model_metrics_bold.tex}
+  \label{tab:model-metrics-bold}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Full model metrics on ENCoDE.}
+  \input{../paper/tables/model_metrics_encode.tex}
+  \label{tab:model-metrics-encode}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{Skin tone distribution summary.}
+  \input{../paper/tables/skintone_distribution.tex}
+  \label{tab:skintone-dist}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{BOLD analysis preview (head).}
+  \input{../paper/tables/bold_preview.tex}
+  \label{tab:bold-preview}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \caption{ENCoDE analysis preview (head).}
+  \input{../paper/tables/encode_preview.tex}
+  \label{tab:encode-preview}
+\end{table}
+
+\subsection{Additional Figures}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_error.png}
+  \caption{BOLD overall error distribution.}
+  \label{fig:bold-error}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_error.png}
+  \caption{ENCoDE overall error distribution.}
+  \label{fig:encode-error}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_device_distribution.png}
+  \caption{ENCoDE device distribution.}
+  \label{fig:encode-device-dist}
+\end{figure}
+
+
+\subsection{Cohort Summary}
+\begin{table}[t]
+  \centering
+  \caption{Cohort characteristics for BOLD and ENCoDE.}
+  \input{../paper/tables/table1_cohort.tex}
+  \label{tab:cohort}
+\end{table}
+
+\subsection{Device and Location Sensitivity (ENCoDE)}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_mae_by_device.png}
+  \caption{ENCoDE MAE by device.}
+  \label{fig:encode-device}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_mae_by_location.png}
+  \caption{ENCoDE MAE by anatomical location.}
+  \label{fig:encode-location}
+\end{figure}
+
+\subsection{Tradeoff Analysis}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/bold_mae_fnr_tradeoff.png}
+  \caption{BOLD MAE vs. hidden hypoxemia FNR tradeoff.}
+  \label{fig:bold-tradeoff}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=3.2in]{../paper/figs/encode_mae_fnr_tradeoff.png}
+  \caption{ENCoDE MAE vs. hidden hypoxemia FNR tradeoff.}
+  \label{fig:encode-tradeoff}
+\end{figure}
+
+\subsection{Isotonic Calibration Pathology}
+In some splits, isotonic regression reduced MAE while substantially increasing hidden hypoxemia rates. We exclude these models from the main results and report them here to illustrate the importance of monitoring clinically meaningful error types alongside aggregate metrics.
+
+\end{document}
