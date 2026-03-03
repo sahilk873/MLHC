@@ -1,0 +1,12 @@
+\begin{tabular}{lrrrrrrrrrrrrrrrr}
+\toprule
+model & mae\_mean & mae\_ci\_low & mae\_ci\_high & mae\_gap\_mean & mae\_gap\_ci\_low & mae\_gap\_ci\_high & missed\_hypoxemia\_rate\_mean & missed\_hypoxemia\_rate\_ci\_low & missed\_hypoxemia\_rate\_ci\_high & fnr\_gap\_mean & fnr\_gap\_ci\_low & fnr\_gap\_ci\_high & ece\_mean & ece\_ci\_low & ece\_ci\_high & pathological\_fnr\_any \\
+\midrule
+baseline & 2.439 & 2.411 & 2.467 & 0.839 & 0.705 & 0.974 & 0.036 & 0.034 & 0.039 & 0.260 & 0.119 & 0.400 & 1.620 & 1.594 & 1.645 & False \\
+isotonic & 2.143 & 2.129 & 2.157 & 0.636 & 0.487 & 0.785 & 0.047 & 0.045 & 0.050 & 0.000 & 0.000 & 0.000 & 0.066 & 0.052 & 0.080 & True \\
+isotonic\_safe & 4.263 & 4.205 & 4.320 & 0.484 & 0.377 & 0.591 & 0.021 & 0.019 & 0.022 & 0.497 & 0.312 & 0.682 & 3.507 & 3.438 & 3.577 & False \\
+ridge & 2.238 & 2.223 & 2.253 & 0.634 & 0.488 & 0.780 & 0.043 & 0.040 & 0.045 & 0.297 & 0.172 & 0.422 & 0.384 & 0.369 & 0.399 & False \\
+ridge\_reweighted & 2.290 & 2.270 & 2.310 & 0.634 & 0.479 & 0.789 & 0.045 & 0.043 & 0.047 & 0.191 & 0.110 & 0.272 & 0.680 & 0.636 & 0.725 & False \\
+ridge\_safe & 5.524 & 5.490 & 5.558 & 0.463 & 0.309 & 0.617 & 0.021 & 0.019 & 0.022 & 0.497 & 0.312 & 0.682 & 4.964 & 4.921 & 5.007 & False \\
+\bottomrule
+\end{tabular}
