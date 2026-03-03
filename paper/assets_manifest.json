@@ -10,6 +10,86 @@
     "dest": "paper/figs/encode_error.png"
   },
   {
+    "type": "figure",
+    "src": "results/figures/bold_error_by_race.png",
+    "dest": "paper/figs/bold_error_by_race.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/bold_race_distribution.png",
+    "dest": "paper/figs/bold_race_distribution.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_error_by_skintone.png",
+    "dest": "paper/figs/encode_error_by_skintone.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_skintone_distribution.png",
+    "dest": "paper/figs/encode_skintone_distribution.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/bold_calibration.png",
+    "dest": "paper/figs/bold_calibration.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_calibration.png",
+    "dest": "paper/figs/encode_calibration.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/bold_hidden_hypoxemia_sweep.png",
+    "dest": "paper/figs/bold_hidden_hypoxemia_sweep.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_hidden_hypoxemia_sweep.png",
+    "dest": "paper/figs/encode_hidden_hypoxemia_sweep.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_mae_gap_ci.png",
+    "dest": "paper/figs/encode_mae_gap_ci.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_device_distribution.png",
+    "dest": "paper/figs/encode_device_distribution.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_mae_by_device.png",
+    "dest": "paper/figs/encode_mae_by_device.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_mae_by_location.png",
+    "dest": "paper/figs/encode_mae_by_location.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/bold_mae_fnr_tradeoff.png",
+    "dest": "paper/figs/bold_mae_fnr_tradeoff.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_mae_fnr_tradeoff.png",
+    "dest": "paper/figs/encode_mae_fnr_tradeoff.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/bold_fnr_gap_ci.png",
+    "dest": "paper/figs/bold_fnr_gap_ci.png"
+  },
+  {
+    "type": "figure",
+    "src": "results/figures/encode_fnr_gap_ci.png",
+    "dest": "paper/figs/encode_fnr_gap_ci.png"
+  },
+  {
     "type": "table",
     "src": "results/tables/bold_preview.csv",
     "dest": "paper/tables/bold_preview.csv"
@@ -33,5 +113,35 @@
     "type": "table",
     "src": "results/tables/model_metrics_encode.csv",
     "dest": "paper/tables/model_metrics_encode.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/table1_cohort.csv",
+    "dest": "paper/tables/table1_cohort.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/table2_bold_models.csv",
+    "dest": "paper/tables/table2_bold_models.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/table3_encode_models.csv",
+    "dest": "paper/tables/table3_encode_models.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/tradeoff_summary_bold.csv",
+    "dest": "paper/tables/tradeoff_summary_bold.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/tradeoff_summary_encode.csv",
+    "dest": "paper/tables/tradeoff_summary_encode.csv"
+  },
+  {
+    "type": "table",
+    "src": "results/tables/group_counts.csv",
+    "dest": "paper/tables/group_counts.csv"
   }
 ]

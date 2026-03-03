@@ -8,8 +8,8 @@ from typing import Any, Dict
 import pandas as pd
 
 from src.models.baselines import baseline_predict
-from src.models.evaluate import grouped_mae, mae, rmse
-from src.models.train import split_dataframe
+from src.models.evaluate import evaluate_dataset
+from src.models.train import fit_models_in_memory, split_dataframe
 
 
 def _load_model(path: Path) -> Any:
@@ -37,27 +37,16 @@ def _predict(model: Any, df: pd.DataFrame) -> pd.Series:
     raise ValueError("Unsupported model type")
 
 
-def _metrics(df: pd.DataFrame, group_cols: list[str]) -> Dict[str, Any]:
-    out: Dict[str, Any] = {
-        "mae": mae(df["sao2"].values, df["sao2_hat"].values),
-        "rmse": rmse(df["sao2"].values, df["sao2_hat"].values),
-    }
-    for col in group_cols:
-        if col in df.columns:
-            out[f"grouped_mae_{col}"] = grouped_mae(df, col)
-    return out
-
-
-def evaluate_file(path: Path, output_name: str) -> Dict[str, Any]:
+def evaluate_file(path: Path, output_name: str, group_cols: list[str]) -> Dict[str, Any]:
     df = pd.read_parquet(path)
     if df.empty:
         print(f"WARN: {path} is empty; skipping evaluation")
         return {}
+    df = df.copy()
     df["sao2_hat"] = baseline_predict(df)
     out_dir = Path("results/metrics")
     out_dir.mkdir(parents=True, exist_ok=True)
-    metrics = _metrics(df, group_cols=["race_ethnicity", "skintone_bin"])
-    (out_dir / output_name).write_text(json.dumps(metrics, indent=2))
+    metrics = evaluate_dataset(df, str(out_dir / output_name), group_cols, thresholds=[90, 92, 94])
     return metrics
 
 
@@ -67,8 +56,8 @@ def main() -> None:
     out_dir = Path("results/metrics")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    baseline_bold = {}
-    baseline_encode = {}
+    baseline_bold: Dict[str, Any] = {}
+    baseline_encode: Dict[str, Any] = {}
 
     models_dir = Path("results/models")
     if not models_dir.exists():
@@ -78,40 +67,66 @@ def main() -> None:
     model_paths = {
         "isotonic": models_dir / "isotonic.json",
         "ridge": models_dir / "ridge.json",
+        "ridge_reweighted": models_dir / "ridge_reweighted.json",
+        "isotonic_safe": models_dir / "isotonic_safe.json",
+        "ridge_safe": models_dir / "ridge_safe.json",
     }
     models = {name: _load_model(path) for name, path in model_paths.items() if path.exists()}
 
     results_bold: Dict[str, Any] = {}
     results_encode: Dict[str, Any] = {}
 
+    min_group_n = 30
     if bold_path.exists():
         bold_df = pd.read_parquet(bold_path)
         train_df, test_df = split_dataframe(bold_df, seed=1337)
         if not test_df.empty:
             test_df = test_df.copy()
             test_df["sao2_hat"] = baseline_predict(test_df)
-            baseline_bold = _metrics(test_df, group_cols=["race_ethnicity"])
-            (out_dir / "baseline_bold.json").write_text(json.dumps(baseline_bold, indent=2))
+            baseline_bold = evaluate_dataset(
+                test_df,
+                str(out_dir / "baseline_bold.json"),
+                group_cols=["race_ethnicity"],
+                thresholds=[90, 92, 94],
+                min_group_n=min_group_n,
+            )
 
         if models:
             for name, model in models.items():
                 eval_df = test_df.copy()
                 eval_df["sao2_hat"] = _predict(model, eval_df)
-                results_bold[name] = _metrics(eval_df, group_cols=["race_ethnicity"])
+                results_bold[name] = evaluate_dataset(
+                    eval_df,
+                    str(out_dir / f"model_{name}_bold.json"),
+                    group_cols=["race_ethnicity"],
+                    thresholds=[90, 92, 94],
+                    min_group_n=min_group_n,
+                )
 
     if encode_path.exists():
         encode_df = pd.read_parquet(encode_path)
         if not encode_df.empty:
             eval_base = encode_df.copy()
             eval_base["sao2_hat"] = baseline_predict(eval_base)
-            baseline_encode = _metrics(eval_base, group_cols=["skintone_bin"])
-            (out_dir / "baseline_encode.json").write_text(json.dumps(baseline_encode, indent=2))
+            baseline_encode = evaluate_dataset(
+                eval_base,
+                str(out_dir / "baseline_encode.json"),
+                group_cols=["skintone_bin", "race_ethnicity", "device_folder", "location_id"],
+                thresholds=[90, 92, 94],
+                min_group_n=min_group_n,
+            )
 
             if models:
                 for name, model in models.items():
                     eval_df = encode_df.copy()
                     eval_df["sao2_hat"] = _predict(model, eval_df)
-                    results_encode[name] = _metrics(eval_df, group_cols=["skintone_bin"])
+                    results_encode[name] = evaluate_dataset(
+                        eval_df,
+                        str(out_dir / f"model_{name}_encode.json"),
+                        group_cols=["skintone_bin", "race_ethnicity", "device_folder", "location_id"],
+                        thresholds=[90, 92, 94],
+                        min_group_n=min_group_n,
+                    )
 
     if results_bold:
         (out_dir / "models_bold.json").write_text(json.dumps(results_bold, indent=2))
@@ -124,6 +139,48 @@ def main() -> None:
         "encode": {"baseline": baseline_encode, "models": results_encode},
     }
     (out_dir / "final_summary.json").write_text(json.dumps(summary, indent=2))
+
+    # Repeated splits summary (robustness)
+    if os.environ.get("SKIP_REPEATED_SPLITS", "0") != "1":
+        seeds = [7, 11, 19, 29, 43]
+        if bold_path.exists():
+            bold_df = pd.read_parquet(bold_path)
+            repeated = []
+            for seed in seeds:
+                train_df, test_df = split_dataframe(bold_df, seed=seed)
+                if test_df.empty:
+                    continue
+                models_in_mem = fit_models_in_memory(train_df)
+                # baseline
+                test_df = test_df.copy()
+                test_df["sao2_hat"] = baseline_predict(test_df)
+                base_metrics = evaluate_dataset(
+                    test_df,
+                    str(out_dir / f"repeated_baseline_bold_{seed}.json"),
+                    ["race_ethnicity"],
+                    [90, 92, 94],
+                    min_group_n=min_group_n,
+                )
+                base_metrics["seed"] = seed
+                base_metrics["model"] = "baseline"
+                repeated.append(base_metrics)
+                for name, model in models_in_mem.items():
+                    eval_df = test_df.copy()
+                    eval_df["sao2_hat"] = _predict(model, eval_df)
+                    metrics = evaluate_dataset(
+                        eval_df,
+                        str(out_dir / f"repeated_{name}_bold_{seed}.json"),
+                        ["race_ethnicity"],
+                        [90, 92, 94],
+                        min_group_n=min_group_n,
+                    )
+                    # flag pathological FNR
+                    metrics["pathological_fnr"] = bool(metrics.get("fnr", 0.0) >= 0.99)
+                    metrics["seed"] = seed
+                    metrics["model"] = name
+                    repeated.append(metrics)
+            if repeated:
+                (out_dir / "repeated_splits_bold.json").write_text(json.dumps(repeated, indent=2))
 
 
 if __name__ == "__main__":

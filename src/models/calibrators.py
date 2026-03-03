@@ -15,6 +15,19 @@ class IsotonicCalibrator:
         return self.model.predict(x)
 
 
+@dataclass
+class OffsetCalibrator:
+    base_model: object
+    offset: float
+
+    def predict(self, x: pd.Series) -> np.ndarray:
+        if hasattr(self.base_model, "predict"):
+            preds = self.base_model.predict(x)
+        else:
+            raise ValueError("Base model must implement predict")
+        return np.asarray(preds) - float(self.offset)
+
+
 def fit_isotonic(x: pd.Series, y: pd.Series) -> IsotonicCalibrator:
     model = IsotonicRegression(out_of_bounds="clip")
     model.fit(x.values, y.values)

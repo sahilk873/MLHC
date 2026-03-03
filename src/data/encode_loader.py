@@ -10,7 +10,11 @@ from .schemas import ENCODE_TABLES, OMOP_KEY_COLUMNS
 
 
 def _load_csv(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path, low_memory=False)
+    # Try comma-delimited first; fall back to tab-delimited if needed.
+    df = pd.read_csv(path, low_memory=False)
+    if len(df.columns) == 1 and "\t" in df.columns[0]:
+        df = pd.read_csv(path, low_memory=False, sep="\t")
+    return df
 
 
 def load_encode_tables(root: str) -> Dict[str, pd.DataFrame]:

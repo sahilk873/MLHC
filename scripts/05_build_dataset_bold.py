@@ -22,6 +22,13 @@ def main() -> None:
     df = load_bold_table(str(main_table))
     df = normalize_columns(df)
     sao2_col, spo2_col = validate_bold_schema(df)
+    # Basic cleaning: drop missing/implausible oxygen saturation values
+    df[sao2_col] = pd.to_numeric(df[sao2_col], errors="coerce")
+    df[spo2_col] = pd.to_numeric(df[spo2_col], errors="coerce")
+    df = df.dropna(subset=[sao2_col, spo2_col])
+    df = df[(df[sao2_col] >= 0) & (df[sao2_col] <= 100)]
+    df = df[(df[spo2_col] >= 0) & (df[spo2_col] <= 100)]
+
     df = add_error_columns(df, sao2_col, spo2_col)
     df = add_hidden_hypoxemia(df, [90, 92, 94])
     df["dataset"] = "bold"
