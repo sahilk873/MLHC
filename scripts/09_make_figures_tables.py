@@ -74,6 +74,18 @@ def _cohort_summary(df: pd.DataFrame, dataset: str) -> pd.DataFrame:
         female_rate = float("nan")
     race_counts = df["race_ethnicity"].value_counts(dropna=False).to_dict() if "race_ethnicity" in df.columns else {}
     skintone_counts = df["skintone_bin"].value_counts(dropna=False).to_dict() if "skintone_bin" in df.columns else {}
+
+    def _format_counts(counts: dict, top_n: int = 5) -> str:
+        if not counts:
+            return ""
+        items = sorted(counts.items(), key=lambda kv: (-kv[1], str(kv[0])))
+        top = items[:top_n]
+        rest = items[top_n:]
+        parts = [f"{label}: {int(val)}" for label, val in top]
+        if rest:
+            other = int(sum(val for _, val in rest))
+            parts.append(f"Other: {other}")
+        return "; ".join(parts)
     return pd.DataFrame(
         [
             {
@@ -82,8 +94,8 @@ def _cohort_summary(df: pd.DataFrame, dataset: str) -> pd.DataFrame:
                 "age_mean": age_mean,
                 "age_std": age_std,
                 "female_rate": female_rate,
-                "race_counts": json.dumps(race_counts),
-                "skintone_bin_counts": json.dumps(skintone_counts),
+                "race_distribution": _format_counts(race_counts, top_n=6),
+                "skintone_bin_distribution": _format_counts(skintone_counts, top_n=6),
             }
         ]
     )
@@ -291,9 +303,38 @@ def main() -> None:
             encode_rows.append(_table_row(name, encode_metrics, "skintone_bin", threshold))
 
     if bold_rows:
-        write_table(pd.DataFrame(bold_rows), str(results_tab / "table2_bold_models.csv"))
+        bold_df = pd.DataFrame(bold_rows)
+        rename_cols = {
+            "model": "Model",
+            "mae": "MAE",
+            "mae_ci_low": "MAE CI Low",
+            "mae_ci_high": "MAE CI High",
+            "rmse": "RMSE",
+            "rmse_ci_low": "RMSE CI Low",
+            "rmse_ci_high": "RMSE CI High",
+            "ece": "ECE",
+            "ece_ci_low": "ECE CI Low",
+            "ece_ci_high": "ECE CI High",
+            "mae_gap": "MAE Gap (max--min)",
+            "mae_gap_ci_low": "MAE Gap CI Low",
+            "mae_gap_ci_high": "MAE Gap CI High",
+            "worst_group_mae": "Worst-group MAE",
+            "missed_hypoxemia_rate": "Hidden Hypoxemia Rate",
+            "missed_hypoxemia_rate_ci_low": "HH Rate CI Low",
+            "missed_hypoxemia_rate_ci_high": "HH Rate CI High",
+            "fnr_gap": "FNR Gap (max--min)",
+            "fnr_gap_ci_low": "FNR Gap CI Low",
+            "fnr_gap_ci_high": "FNR Gap CI High",
+            "hidden_hypoxemia_T92_gap": "HH T92 Gap (max--min)",
+            "hidden_hypoxemia_T92_gap_ci_low": "HH T92 Gap CI Low",
+            "hidden_hypoxemia_T92_gap_ci_high": "HH T92 Gap CI High",
+        }
+        bold_df = bold_df.rename(columns=rename_cols)
+        write_table(bold_df, str(results_tab / "table2_bold_models.csv"))
     if encode_rows:
-        write_table(pd.DataFrame(encode_rows), str(results_tab / "table3_encode_models.csv"))
+        encode_df = pd.DataFrame(encode_rows)
+        encode_df = encode_df.rename(columns=rename_cols)
+        write_table(encode_df, str(results_tab / "table3_encode_models.csv"))
 
     # Tradeoff summary tables
     if bold_rows:
