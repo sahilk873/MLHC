@@ -136,6 +136,7 @@ def _table_row(name: str, metrics: dict, group_col: str, threshold: int) -> dict
     gap_ci = metrics.get(f"grouped_mae_{group_col}_gap_ci", {})
     fnr_gap_ci = metrics.get(f"grouped_fnr_{group_col}_gap_ci", {})
     hh_gap_ci = metrics.get(f"grouped_hidden_hypoxemia_T{threshold}_{group_col}_gap_ci", {})
+    hh_rate_ci = metrics.get(f"hidden_hypoxemia_T{threshold}_rate_ci", {})
     row = {
         "model": name,
         "mae": metrics.get("mae"),
@@ -147,19 +148,20 @@ def _table_row(name: str, metrics: dict, group_col: str, threshold: int) -> dict
         "ece": metrics.get("ece"),
         "ece_ci_low": metrics.get("ece_ci", {}).get("ci_low"),
         "ece_ci_high": metrics.get("ece_ci", {}).get("ci_high"),
-        "mae_gap": metrics.get(f"grouped_mae_{group_col}_gap"),
+        "mae_gap": gap_ci.get("mean"),
         "mae_gap_ci_low": gap_ci.get("ci_low"),
         "mae_gap_ci_high": gap_ci.get("ci_high"),
         "worst_group_mae": metrics.get(f"worst_group_mae_{group_col}", {}).get("value"),
+        "hidden_hypoxemia_prevalence": metrics.get(f"hidden_hypoxemia_T{threshold}_rate"),
+        "hidden_hypoxemia_prevalence_ci_low": hh_rate_ci.get("ci_low"),
+        "hidden_hypoxemia_prevalence_ci_high": hh_rate_ci.get("ci_high"),
         "missed_hypoxemia_rate": metrics.get("missed_hypoxemia_rate"),
         "missed_hypoxemia_rate_ci_low": metrics.get("missed_hypoxemia_rate_ci", {}).get("ci_low"),
         "missed_hypoxemia_rate_ci_high": metrics.get("missed_hypoxemia_rate_ci", {}).get("ci_high"),
-        "fnr_gap": metrics.get(f"grouped_fnr_{group_col}_gap"),
+        "fnr_gap": fnr_gap_ci.get("mean"),
         "fnr_gap_ci_low": fnr_gap_ci.get("ci_low"),
         "fnr_gap_ci_high": fnr_gap_ci.get("ci_high"),
-        f"hidden_hypoxemia_T{threshold}_gap": metrics.get(
-            f"grouped_hidden_hypoxemia_T{threshold}_{group_col}_gap"
-        ),
+        f"hidden_hypoxemia_T{threshold}_gap": hh_gap_ci.get("mean"),
         f"hidden_hypoxemia_T{threshold}_gap_ci_low": hh_gap_ci.get("ci_low"),
         f"hidden_hypoxemia_T{threshold}_gap_ci_high": hh_gap_ci.get("ci_high"),
     }
@@ -319,9 +321,12 @@ def main() -> None:
             "mae_gap_ci_low": "MAE Gap CI Low",
             "mae_gap_ci_high": "MAE Gap CI High",
             "worst_group_mae": "Worst-group MAE",
-            "missed_hypoxemia_rate": "Hidden Hypoxemia Rate",
-            "missed_hypoxemia_rate_ci_low": "HH Rate CI Low",
-            "missed_hypoxemia_rate_ci_high": "HH Rate CI High",
+            "hidden_hypoxemia_prevalence": "Hidden Hypoxemia Prevalence (T92)",
+            "hidden_hypoxemia_prevalence_ci_low": "HH Prev CI Low",
+            "hidden_hypoxemia_prevalence_ci_high": "HH Prev CI High",
+            "missed_hypoxemia_rate": "Missed Hypoxemia Rate",
+            "missed_hypoxemia_rate_ci_low": "Missed Rate CI Low",
+            "missed_hypoxemia_rate_ci_high": "Missed Rate CI High",
             "fnr_gap": "FNR Gap (max--min)",
             "fnr_gap_ci_low": "FNR Gap CI Low",
             "fnr_gap_ci_high": "FNR Gap CI High",
