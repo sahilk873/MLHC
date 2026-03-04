@@ -53,7 +53,7 @@
 \maketitle
 
 \begin{abstract}
-Pulse oximetry bias and hidden hypoxemia have been documented across race/ethnicity groups, but it is unclear whether race-stratified debiasing improves outcomes when validated against measured skin tone. We develop debiasing and calibration strategies on the multi-center BOLD dataset (49,093 paired measurements) and externally validate on ENCoDE (617 paired measurements), which provides prospectively measured skin tone (Monk scale) across devices and locations. We evaluate continuous error and hidden hypoxemia, report bootstrap confidence intervals, and analyze worst-group disparities across race/ethnicity and skin tone bins. On BOLD, simple models improve overall MAE versus the baseline (SpO\textsubscript{2} as SaO\textsubscript{2} proxy) and reduce worst-group gaps. On ENCoDE, transfer evaluation yields wide CIs and no clear, robust evidence that race-stratified gains in BOLD translate cleanly to Monk skin tone bin improvements; ENCoDE has only 2 hidden hypoxemia events at $T=90/92/94$, limiting power. We provide a script-driven pipeline that generates all tables and figures from code; results are reproducible given access to the source datasets.
+Pulse oximetry bias and hidden hypoxemia have been documented across race/ethnicity groups, but it is unclear whether race-stratified debiasing improves outcomes when validated against measured skin tone. We develop debiasing and calibration strategies on the multi-center BOLD dataset (49,093 paired measurements) and externally validate on ENCoDE (617 paired measurements), which provides prospectively measured skin tone (Monk scale) across devices and locations. We evaluate continuous error and hidden hypoxemia, report bootstrap confidence intervals, and analyze worst-group disparities across race/ethnicity and skin tone bins. On BOLD, simple models improve overall MAE versus the baseline (SpO\textsubscript{2} as SaO\textsubscript{2} proxy) and reduce worst-group gaps. On ENCoDE, the external validation shows wide CIs and no clear, robust evidence that race-stratified gains in BOLD translate cleanly to measured pigmentation improvements, with only 2 hidden hypoxemia events at $T=90/92/94$ limiting power.
 \end{abstract}
 
 \section{Introduction}
@@ -67,7 +67,7 @@ In this work, we quantify bias in the BOLD dataset, train debiasing models on BO
 \begin{itemize}
 \item Quantify pulse oximetry bias and hidden hypoxemia on BOLD with bootstrap CIs and worst-group metrics.
 \item Train and analyze multiple simple debiasing/calibration models, emphasizing the MAE--hidden-hypoxemia tradeoff.
-\item Perform external validation on ENCoDE with measured skin tone, showing when race-stratified gains do and do not generalize.
+\item Perform external validation on ENCoDE with measured skin tone, showing that in-domain race-stratified gains do not clearly transfer to measured pigmentation under realistic shift and low event rates.
 \end{itemize}
 
 \subsection*{Generalizable Insights about Machine Learning in the Context of Healthcare}
@@ -107,12 +107,14 @@ BOLD is a multi-center ICU dataset with paired ABG and pulse oximetry measuremen
 \subsection{BOLD Pairing and Preprocessing}
 BOLD provides paired SaO\textsubscript{2}--SpO\textsubscript{2} measurements; we use the provided pairs and do not reconstruct timing-based pairs. We exclude pairs with missing timestamps or oxygen saturation values and remove implausible values outside 0--100. When multiple pairs exist per hospitalization, we retain the first valid pair to reduce dependence.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
   \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
   \caption{Cohort characteristics for BOLD and ENCoDE (one pair per visit; BOLD test split, ENCoDE external cohort).}
-  \resizebox{\textwidth}{!}{\input{tables/table1_cohort.tex}}
+  \input{tables/table1_cohort.tex}
   \label{tab:cohort}
-\end{table}
+\end{table*}
 
 \begin{figure}[htbp]
   \centering
@@ -122,13 +124,12 @@ BOLD provides paired SaO\textsubscript{2}--SpO\textsubscript{2} measurements; we
 \end{figure}
 
 \subsection{Data Extraction}
-We auto-discover raw files, generate a manifest with hashes, and load tables with explicit schema validation. We drop rows with missing SaO\textsubscript{2} or SpO\textsubscript{2} and exclude implausible oxygen saturation values outside 0--100. For ENCoDE, we parse temporary concept IDs to extract skin tone and image-derived features, and index available images by device and location.
+We drop rows with missing SaO\textsubscript{2} or SpO\textsubscript{2} and exclude implausible oxygen saturation values outside 0--100. For ENCoDE, we parse temporary concept IDs to extract skin tone and image-derived features, and index available images by device and location.
 
 \subsection{Feature Choices}
 Features include SpO\textsubscript{2} and demographics (age, sex, race/ethnicity where available) for cohort description and subgrouping. Model training uses SpO\textsubscript{2} only to ensure feature alignment across datasets; skin tone is computed from Monk scale values and binned into light/medium/dark groups. We standardize feature names across datasets to enable transfer evaluation.
 
-\subsection{Reproducibility}
-All results are generated by scripts from a clean checkout with fixed seeds (default seed 1337; repeated splits use $\{7,11,19,29,43\}$), explicit manifests, and environment specifications in \texttt{pyproject.toml} and \texttt{REPRODUCE.md}. We will release the full code and scripts upon publication; data access follows PhysioNet terms for BOLD and ENCoDE.
+
 
 \section{Results on Real Data}
 
@@ -136,6 +137,7 @@ All results are generated by scripts from a clean checkout with fixed seeds (def
 We train debiasing models on BOLD and evaluate on the held-out BOLD test split (canonical seed 1337); repeated split results are summarized in Appendix Table~\ref{tab:repeated-splits}. We then perform external validation on ENCoDE using transferable feature sets only. ENCoDE is never used for tuning or model selection. All metrics include patient-clustered bootstrap confidence intervals computed on fixed test sets, and we report worst-group performance across race/ethnicity (BOLD, ENCoDE) and skin tone bins (ENCoDE).
 
 \subsection{Key Results}
+The central finding is that race-stratified gains on BOLD do not clearly transfer to measured pigmentation on ENCoDE under dataset shift and low event counts.
 On BOLD, ridge regression reduces MAE from 2.456 (95\% CI 2.409 to 2.501) to 2.213 (95\% CI 2.175 to 2.253), and reweighted ridge achieves 2.251 (2.213 to 2.296). The race/ethnicity MAE gap decreases from 0.838 (0.633 to 1.255) at baseline to 0.741 (0.500 to 1.075) for ridge, while the hidden hypoxemia FNR gap decreases from 0.316 (0.146 to 0.917) to 0.123 (0.090 to 0.194) for ridge and 0.053 (0.047 to 0.095) for reweighted ridge.
 
 On ENCoDE, ridge reduces MAE from 2.484 (2.217–2.678) to 1.344 (1.146–1.482); the skin tone MAE gap CIs remain wide (e.g., 0.004–0.429 for ridge), and hidden hypoxemia FNR gap CIs span 0–1.0, reflecting limited power for subgroup event rates. With patient-level clustered resampling, low event counts in some skin tone bins yield extremely wide CIs, as intended to reflect uncertainty.
@@ -170,12 +172,14 @@ Figure~\ref{fig:encode-calibration} shows the ENCoDE reliability curve for SpO\t
 Table~\ref{tab:bold-models} summarizes model performance on BOLD. Reweighted ridge improves overall MAE and reduces worst-group gaps relative to the baseline. Figure~\ref{fig:bold-fnr-gap} shows bootstrapped FNR gap confidence intervals for hidden hypoxemia; ridge and reweighted ridge reduce the upper tail of the FNR gap relative to baseline. Full tradeoff summaries, including safe-offset and isotonic variants, appear in Appendix Tables~\ref{tab:tradeoff-bold} and~\ref{tab:tradeoff-encode}.
 Figure~\ref{fig:bold-tradeoff} highlights the MAE--FNR tradeoff. For example, safe-offset models reduce missed hypoxemia rates from 0.034 to 0.021 but increase MAE from 2.456 to 4.218 on BOLD, illustrating a tradeoff that may not be clinically acceptable; these offsets are included as an exploratory illustration rather than deployment-ready candidates.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
   \centering
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
   \caption{BOLD model performance on the test split with 1,000 patient-clustered bootstrap CIs (primary threshold $T=92$).}
-  \resizebox{\textwidth}{!}{\input{tables/table2_bold_models.tex}}
+  \input{tables/table2_bold_models.tex}
   \label{tab:bold-models}
-\end{table}
+\end{table*}
 
 \begin{figure}[htbp]
   \centering
@@ -194,19 +198,23 @@ Figure~\ref{fig:bold-tradeoff} highlights the MAE--FNR tradeoff. For example, sa
 \subsection{External Validation on ENCoDE}
 Table~\ref{tab:encode-models} shows external validation on ENCoDE using calibration-only debiasing (SpO\textsubscript{2}-only models). Transfer models improve overall MAE in ENCoDE compared with the baseline; however, worst-bin skin tone gaps have wide confidence intervals due to low event counts. Table~\ref{tab:encode-race-vs-skintone-main} directly compares race- vs Monk skin tone bin MAE/FNR/FPR gaps for baseline and ridge; CIs are wide and often have near-zero lower bounds. For example, while ridge reduces the BOLD race MAE gap from 0.838 to 0.741, the ENCoDE race MAE gap bootstrap mean is 0.226 (95\% CI 0.014--0.539) and the Monk-bin MAE gap bootstrap mean is 0.170 (95\% CI 0.004--0.429), reflecting wide uncertainty. We therefore do not find clear, robust evidence that race-based gains in BOLD translate cleanly to Monk-bin improvements in ENCoDE. We further observe that gains measured across race/ethnicity in BOLD do not always translate to improvements across measured skin tone in ENCoDE, consistent with differences in device mix and anatomical measurement location (Appendix Figures~\ref{fig:encode-device}--\ref{fig:encode-location}). Device and location sensitivity analyses show consistent shifts in MAE across hardware and sites, suggesting measurement context contributes to transfer variability.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
   \centering
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
   \caption{ENCoDE external validation results with 1,000 patient-clustered bootstrap CIs (external-only cohort, primary threshold $T=92$).}
-  \resizebox{\textwidth}{!}{\input{tables/table3_encode_models.tex}}
+  \input{tables/table3_encode_models.tex}
   \label{tab:encode-models}
-\end{table}
+\end{table*}
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
   \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
   \caption{ENCoDE comparison of race- vs Monk-bin gaps (baseline and ridge; 95\% patient-clustered bootstrap CIs).}
-  \resizebox{\textwidth}{!}{\input{tables/encode_race_vs_skintone_main.tex}}
+  \input{tables/encode_race_vs_skintone_main.tex}
   \label{tab:encode-race-vs-skintone-main}
-\end{table}
+\end{table*}
 
 \begin{figure}[htbp]
   \centering
@@ -236,6 +244,9 @@ We interpret the partial transfer of race/ethnicity-based gains as consistent wi
 
 We draw three explicit takeaways for MLHC fairness practice: (1) validate debiasing claims on measured clinical attributes (e.g., skin tone) whenever available rather than relying solely on race/ethnicity, (2) report tradeoffs between aggregate error and clinically critical errors like hidden hypoxemia, and (3) accompany subgroup metrics with group counts and event rates to avoid over-interpreting unstable estimates.
 
+\paragraph{Practical Takeaways}
+External validation on measured pigmentation is necessary before making deployment-facing fairness claims, because in-domain race-stratified gains can attenuate under device and cohort shift. Uncertainty should be treated as a first-class result: when event counts are low, subgroup gap estimates should be framed as inconclusive rather than favorable or unfavorable. Finally, safety-oriented adjustments (e.g., offsets) should be presented as tradeoff illustrations rather than deployment-ready corrections unless supported by stronger clinical evidence.
+
 \paragraph{Limitations}
 ENCoDE has relatively low event rates for hidden hypoxemia, yielding wide bootstrap CIs and limited power for subgroup FNR/FPR estimates. Both datasets are drawn from specific institutions and device mixes, so findings may not generalize to other care settings. Transfer models are constrained by feature overlap between datasets; SpO\textsubscript{2}-only models likely underestimate what richer covariates could achieve. We flag models as pathological when test-set FNR is $\geq 0.99$ and report them in the appendix; isotonic variants met this criterion in some splits and are excluded from the main results. Finally, we do not analyze downstream clinical outcomes; our focus is measurement bias rather than clinical decision impact.
 
@@ -252,40 +263,50 @@ This study uses de-identified, publicly available datasets (BOLD and ENCoDE) acc
 \appendix
 \section{Additional Analyses}
 \subsection{Full Results Tables}
-\begin{table}[t]
+\begin{table*}[t]
   \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
   \caption{Group counts used in fairness metrics.}
-  \resizebox{\textwidth}{!}{\input{tables/group_counts.tex}}
+  \input{tables/group_counts.tex}
   \label{tab:group-counts}
-\end{table}
+\end{table*}
 
-\begin{table}[t]
+\begin{table*}[t]
   \centering
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
   \caption{ENCoDE race vs.\ skin tone comparison (baseline SpO\textsubscript{2} predictor; MAE and hidden hypoxemia rate at $T=92$ with 95\% patient-clustered bootstrap CIs).}
-  \resizebox{\textwidth}{!}{\input{tables/encode_race_vs_skintone.tex}}
+  \input{tables/encode_race_vs_skintone.tex}
   \label{tab:encode-race-vs-skintone}
-\end{table}
+\end{table*}
 
 \begin{table}[t]
   \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
   \caption{Tradeoff summary on BOLD.}
-  \resizebox{\textwidth}{!}{\input{tables/tradeoff_summary_bold.tex}}
+  \input{tables/tradeoff_summary_bold.tex}
   \label{tab:tradeoff-bold}
 \end{table}
 
 \begin{table}[t]
   \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
   \caption{Tradeoff summary on ENCoDE.}
-  \resizebox{\textwidth}{!}{\input{tables/tradeoff_summary_encode.tex}}
+  \input{tables/tradeoff_summary_encode.tex}
   \label{tab:tradeoff-encode}
 \end{table}
 
-\begin{table}[t]
+\begin{table*}[t]
   \centering
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
   \caption{Repeated split summary on BOLD.}
-  \resizebox{\textwidth}{!}{\input{tables/repeated_splits_summary_bold.tex}}
+  \input{tables/repeated_splits_summary_bold.tex}
   \label{tab:repeated-splits}
-\end{table}
+\end{table*}
 
 % Full model metrics tables moved to supplementary materials to avoid oversized floats.
 
